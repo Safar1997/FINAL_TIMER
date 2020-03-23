@@ -1,0 +1,17 @@
+.btn{
+    margin-left: 15px;
+    margin-right: 35px;
+}
+.btn-right{
+    margin-left: 20px;
+}
+.inputTime{
+    width: 100px;
+    margin-left: 10px;
+    margin-top: 10px;
+}
+.slider{
+    width: 500px;
+    display: block;
+    margin-left: 10px;
+}
