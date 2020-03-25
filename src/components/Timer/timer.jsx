@@ -1,70 +1,58 @@
 import React, { Component } from 'react';
 import { Button } from 'antd';
+import timer from '../timeFormatter';
 import './timer.css';
 
 // eslint-disable-next-line react/prefer-stateless-function
+const initialState = {
+  count: 0,
+  start: false,
+  startTime: 0,
+};
 export default class Timer extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      count: 0,
-      start: false,
-    };
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.myInterval);
+    this.state = initialState;
   }
 
   startTimer = () => {
-    this.setState(state => ({
-      start: !state.start,
-    }));
-    this.setState(state => {
-      const { start } = state;
-      if (start) {
-        this.myInterval = setInterval(() => {
-          this.setState(({ count }) => ({
-            count: count + 1,
-          }));
-        }, 10);
-      } else {
-        clearInterval(this.myInterval);
+    this.setState(
+      state => ({
+        start: !state.start,
+        startTime: Date.now() - state.count,
+      }),
+      () => {
+        const timerGo = () => {
+          this.timerId = setTimeout(() => {
+            const { start } = this.state;
+            if (!start) {
+              clearTimeout(this.timerId);
+              return;
+            }
+            this.setState(state => ({
+              count: Date.now() - state.startTime,
+            }));
+            timerGo();
+          }, 25);
+        };
+        timerGo();
       }
-    });
+    );
   };
 
   resetTimer = () => {
-    this.setState({
-      start: false,
-      count: 0,
-    });
-    clearInterval(this.myInterval);
+    clearTimeout(this.timerId);
+    this.setState(initialState);
   };
 
   render() {
-    const { count } = this.state;
-
-    const dividOn = number => {
-      const minutes =
-        Math.floor(number / 6000) >= 10
-          ? Math.floor(number / 6000)
-          : `0${Math.floor(number / 6000)}`;
-      const seconds =
-        Math.floor((number % 6000) / 10) >= 100
-          ? Math.floor((number % 6000) / 100)
-          : `0${Math.floor((number % 6000) / 100)}`;
-
-      const mili = number % 100 >= 10 ? number % 100 : `0${number % 100}`;
-      return `${minutes}:${seconds}:${mili}`;
-    };
-
+    const { count, start } = this.state;
     return (
       <div>
         <Button type="primary" onClick={this.startTimer} className="btn">
-          Start/Pause
+          {start === true ? 'pause' : 'start'}
         </Button>
-        The timer is {dividOn(count)}
+        <div className="showTime">The timer is {timer(count)}</div>
         <Button type="primary" onClick={this.resetTimer} className="btn">
           Reset
         </Button>

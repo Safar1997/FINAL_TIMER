@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Button, Slider, InputNumber } from 'antd';
 import './countdown.css';
+import soundfile from './voice/audio.mp3';
 import Countdownn from './countdown';
 
 // eslint-disable-next-line react/prefer-stateless-function
@@ -8,145 +9,140 @@ export default class InputTime extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      minutes: 0,
-      seconds: 0,
-      sliderValue: 0,
       start: false,
       count: 0,
-      disabled: false,
-      startTime: 0,
+      timeToCount: 0,
+      currentTime: 0,
+      didStart: false,
     };
   }
 
-  componentDidUpdate() {
-    const { start, count } = this.state;
-    if (start && count < 1) {
-      clearInterval(this.myInterval);
-    }
-  }
-
   sliderChange = value => {
-    const minutes = Math.trunc((value * 100) / 100);
-    let seconds;
-    switch ((value * 100) % 100) {
-      case 25:
-        seconds = 15;
-        break;
-      case 50:
-        seconds = 30;
-        break;
-      case 75:
-        seconds = 45;
-        break;
-      default:
-        seconds = 0;
-        break;
-    }
     this.setState({
-      minutes,
-      seconds,
-      sliderValue: value,
-      count: (minutes * 60 + seconds) * 1000,
-      startTime: (minutes * 60 + seconds) * 1000,
+      timeToCount: value * 1000,
     });
   };
 
   minutesChange = value => {
-    this.setState({
-      minutes: value > 720 ? 720 : value,
-    });
-    this.setState(({ minutes, seconds }) => ({
-      seconds: minutes >= 720 ? 0 : seconds,
-    }));
-    this.setState(({ minutes, seconds }) => ({
-      count: (minutes * 60 + seconds) * 1000,
-      startTime: (minutes * 60 + seconds) * 1000,
+    this.setState(state => ({
+      timeToCount: (value * 60 + (Math.floor(state.timeToCount / 1000) % 60)) * 1000,
     }));
   };
 
   secondsChange = value => {
-    const { minutes } = this.state;
-    this.setState({
-      seconds: minutes >= 720 ? 0 : value,
-    });
-    this.setState(({ seconds }) => ({
-      count: (minutes * 60 + seconds) * 1000,
-      startTime: (minutes * 60 + seconds) * 1000,
+    this.setState(state => ({
+      timeToCount:
+        ((value % 60) + Math.floor(Math.floor(state.timeToCount / 1000) / 60) * 60) * 1000,
     }));
   };
 
   startOrPause = () => {
-    this.setState(state => ({
-      start: !state.start,
-      disabled: true,
-    }));
-    this.setState(state => {
-      const { start } = state;
-      if (start) {
-        this.myInterval = setInterval(() => {
-          this.setState(({ count }) => ({
-            count: count - 3,
-          }));
-        }, 1);
-      } else {
-        clearInterval(this.myInterval);
+    this.setState(
+      state => ({
+        start: !state.start,
+        startTime: Date.now() - state.count,
+        didStart: true,
+      }),
+      () => {
+        const timerGo = () => {
+          this.timerId = setTimeout(() => {
+            const { start } = this.state;
+            if (!start) {
+              clearTimeout(this.timerId);
+              return;
+            }
+            this.setState(
+              state => ({
+                count: Date.now() - state.startTime,
+                currentTime: state.timeToCount - (Date.now() - state.startTime),
+              }),
+              () => {
+                const { currentTime, didStart } = this.state;
+                if (currentTime < 24) {
+                  this.setState({
+                    didStart: false,
+                  });
+                }
+                if (currentTime < 24 && didStart) {
+                  clearTimeout(this.timerId);
+                }
+              }
+            );
+            timerGo();
+          }, 25);
+        };
+        timerGo();
       }
-    });
+    );
   };
 
   resetTimer = () => {
+    clearTimeout(this.timerId);
     this.setState({
-      start: false,
       count: 0,
-      minutes: 0,
-      seconds: 0,
-      sliderValue: 0,
-      disabled: false,
+      start: false,
+      startTime: 0,
+      currentTime: 0,
+      didStart: false,
     });
-    clearInterval(this.myInterval);
+  };
+
+  minOrSecValue = id => () => {
+    const { timeToCount } = this.state;
+    let seconds = Math.floor(timeToCount / 1000) % 60;
+    let minutes = Math.floor(Math.floor(timeToCount / 1000) / 60);
+    if (minutes === 720) {
+      seconds = 0;
+    }
+    if (id === 'minutes') {
+      minutes = minutes < 10 ? `0${minutes}` : minutes;
+      return minutes;
+    }
+    return seconds;
   };
 
   render() {
-    const { minutes, seconds, sliderValue, count, disabled, startTime } = this.state;
+    const { currentTime, start, timeToCount } = this.state;
+    const audio = new Audio(soundfile);
+
+    if (currentTime < 0.2 && currentTime > 0.01) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+
     return (
       <>
         <Slider
-          step={0.25}
+          step={15}
           min={0}
-          max={60}
-          disabled={disabled}
+          max={3600}
+          disabled={currentTime !== 0}
           className="slider"
           onChange={this.sliderChange}
-          value={sliderValue}
         />
         <InputNumber
           max={720}
           min={0}
-          value={minutes}
+          value={this.minOrSecValue('minutes')()}
           placeholder="Minutes"
-          type="number"
           className="inputTime"
           onChange={this.minutesChange}
-          disabled={disabled}
+          disabled={currentTime !== 0}
         />
         <InputNumber
           max={60}
           min={0}
-          value={seconds}
+          value={this.minOrSecValue('seconds')()}
           placeholder="Seconds"
           rype="number"
           className="inputTime"
           onChange={this.secondsChange}
-          disabled={disabled}
+          disabled={currentTime !== 0}
         />
-        <Countdownn
-          minutes={minutes}
-          seconds={seconds}
-          count={Math.floor(count)}
-          startTime={startTime}
-        />
+        <Countdownn currentTime={currentTime} timeToCount={timeToCount} />
         <Button type="primary" onClick={this.startOrPause} className="btn">
-          Start/Pause
+          {start ? 'pause' : 'start'}
         </Button>
         <Button type="primary" onClick={this.resetTimer} className="btn">
           Reset

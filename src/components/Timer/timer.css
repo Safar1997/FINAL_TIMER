@@ -1,9 +1,9 @@
 .btn{
+    display: inline-block;
     margin-left: 15px;
     margin-right: 35px;
-}
-.btn-right{
-    margin-left: 20px;
+    width: 70px;
+    border: 1px solid transparent;
 }
 .inputTime{
     width: 100px;
@@ -14,4 +14,9 @@
     width: 500px;
     display: block;
     margin-left: 10px;
+}
+.showTime{
+    display: inline-block;
+    border: 1px solid transparent;
+    width: 140px;
 }
