@@ -65,6 +65,13 @@ export default class InputTime extends Component {
                 }
                 if (currentTime < 24 && didStart) {
                   clearTimeout(this.timerId);
+                  this.setState({
+                    count: 0,
+                    start: false,
+                    startTime: 0,
+                    currentTime: 0,
+                    didStart: false,
+                  });
                 }
               }
             );
@@ -113,6 +120,7 @@ export default class InputTime extends Component {
 
     return (
       <>
+        in seconds
         <Slider
           step={15}
           min={0}
@@ -121,6 +129,7 @@ export default class InputTime extends Component {
           className="slider"
           onChange={this.sliderChange}
         />
+        type minutes
         <InputNumber
           max={720}
           min={0}
@@ -130,6 +139,7 @@ export default class InputTime extends Component {
           onChange={this.minutesChange}
           disabled={currentTime !== 0}
         />
+        type seconds
         <InputNumber
           max={60}
           min={0}
